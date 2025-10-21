@@ -13,6 +13,7 @@ let manualScanMode = false;
 let autoScanActive = false;
 let faceDB = [];
 let intruders = [];
+let currentIntruder = null;
 let alerts = [];
 let home = { x: 0, y: 0 };
 let perimeterRadius = 150;
@@ -76,7 +77,7 @@ function drawMap() {
         const dx = home.x - intruder.x;
         const dy = home.y - intruder.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         // Color según estado y posición
         if (intruder.authorized) {
             mapCtx.fillStyle = '#4CAF50';
@@ -85,18 +86,18 @@ function drawMap() {
         } else {
             mapCtx.fillStyle = '#FF9800';
         }
-        
+
         mapCtx.beginPath();
         mapCtx.arc(intruder.x, intruder.y, 10, 0, Math.PI * 2);
         mapCtx.fill();
-        
+
         // Mostrar nombre si está autorizado
         if (intruder.authorized) {
             mapCtx.fillStyle = '#fff';
             mapCtx.font = 'bold 10px Arial';
             mapCtx.fillText(intruder.name, intruder.x, intruder.y - 15);
         }
-        
+
         // Mostrar estado de escaneo
         if (intruder.needsScan && dist <= perimeterRadius) {
             mapCtx.strokeStyle = '#FFD700';
@@ -121,7 +122,7 @@ function checkPerimeter() {
         // Detectar entrada al perímetro
         if (dist <= perimeterRadius) {
             intrudersInZone++;
-            
+
             if (!intruder.authorized) {
                 if (!intruder.insidePerimeter) {
                     intruder.insidePerimeter = true;
@@ -145,7 +146,7 @@ function checkPerimeter() {
     // Actualizar indicador de zona
     const indicator = document.getElementById('zoneIndicator');
     const intrudersCount = document.getElementById('intrudersInZone');
-    
+
     if (indicator && intrudersCount) {
         intrudersCount.textContent = intrudersInZone;
 
@@ -210,9 +211,16 @@ function updateSim() {
 
 // Agregar intruso
 function addIntruder() {
+    // Limpiar intruso anterior
+    intruders = [];
+    currentIntruder = null;
+    document.getElementById('currentIntruderInfo').textContent = 'Ninguno';
+    document.getElementById('hasAppToggle').checked = false;
+    updateAuthorizationStatus('pending');
+    
     const angle = Math.random() * Math.PI * 2;
     const distance = perimeterRadius + 150;
-    intruders.push({
+    currentIntruder = {
         x: home.x + Math.cos(angle) * distance,
         y: home.y + Math.sin(angle) * distance,
         authorized: false,
@@ -221,16 +229,113 @@ function addIntruder() {
         perimeterAlertSent: false,
         unauthorizedAlertSent: false,
         identifiedAlertSent: false,
+        hasApp: false,
         id: Date.now()
-    });
+    };
+    intruders.push(currentIntruder);
+    
+    // Actualizar información del intruso actual
+    document.getElementById('currentIntruderInfo').textContent = `ID: ${currentIntruder.id} | Posición: (${Math.round(currentIntruder.x)}, ${Math.round(currentIntruder.y)})`;
 }
 
 function clearAll() {
     intruders = [];
+    currentIntruder = null;
+    document.getElementById('currentIntruderInfo').textContent = 'Ninguno';
+    document.getElementById('hasAppToggle').checked = false;
+    updateAuthorizationStatus('pending');
     autoScanActive = false;
     scanMode = manualScanMode;
     updateScanStatus();
     drawMap();
+}
+
+// Toggle para indicar si el individuo tiene app
+function toggleHasApp() {
+    if (currentIntruder) {
+        const hasAppToggle = document.getElementById('hasAppToggle');
+        currentIntruder.hasApp = hasAppToggle.checked;
+        
+        if (hasAppToggle.checked) {
+            addAlert({
+                time: new Date().toLocaleTimeString(),
+                msg: `ℹ️ Intruso ${currentIntruder.id} tiene la aplicación instalada`,
+                ok: true
+            });
+            
+            // Verificar si ahora está autorizado
+            checkAuthorization();
+        } else {
+            addAlert({
+                time: new Date().toLocaleTimeString(),
+                msg: `ℹ️ Intruso ${currentIntruder.id} NO tiene la aplicación instalada`,
+                ok: true
+            });
+            
+            // Verificar si ahora está autorizado
+            checkAuthorization();
+        }
+    }
+}
+
+// Verificar autorización del intruso actual
+function checkAuthorization() {
+    if (!currentIntruder) return;
+    
+    // Verificar si tiene la app activada
+    if (currentIntruder.hasApp) {
+        currentIntruder.authorized = true;
+        updateAuthorizationStatus('authorized');
+        addAlert({
+            time: new Date().toLocaleTimeString(),
+            msg: `✓ Intruso ${currentIntruder.id} autorizado por aplicación`,
+            ok: true
+        });
+        return true;
+    }
+    
+    // Si no tiene la app, verificar si coincide con rostro autorizado
+    if (currentIntruder.faceMatch) {
+        currentIntruder.authorized = true;
+        updateAuthorizationStatus('authorized');
+        addAlert({
+            time: new Date().toLocaleTimeString(),
+            msg: `✓ Intruso ${currentIntruder.id} autorizado por reconocimiento facial`,
+            ok: true
+        });
+        return true;
+    }
+    
+    // Si no tiene ninguno de los dos, no está autorizado
+    currentIntruder.authorized = false;
+    updateAuthorizationStatus('unauthorized');
+    
+    // Solo enviar alerta una vez
+    if (!currentIntruder.unauthorizedAlertSent) {
+        currentIntruder.unauthorizedAlertSent = true;
+        addAlert({
+            time: new Date().toLocaleTimeString(),
+            msg: `🚨 ALERTA: Intruso ${currentIntruder.id} NO AUTORIZADO - Sin app ni rostro reconocido`,
+            ok: false
+        });
+    }
+    
+    return false;
+}
+
+// Actualizar estado de autorización en la UI
+function updateAuthorizationStatus(status) {
+    const authStatus = document.getElementById('authorizationStatus');
+    if (status === 'authorized') {
+        authStatus.className = 'authorization-status authorized';
+        authStatus.textContent = 'Estado: AUTORIZADO ✓';
+    } else if (status === 'unauthorized') {
+        authStatus.className = 'authorization-status unauthorized';
+        authStatus.textContent = 'Estado: NO AUTORIZADO ⚠';
+    } else {
+        authStatus.className = 'authorization-status pending';
+        authStatus.textContent = 'Estado: Pendiente de verificación';
+    }
 }
 
 // Agregar alerta
@@ -246,7 +351,7 @@ function addAlert(alertData) {
 function updateAlerts() {
     const log = document.getElementById('alertLog');
     if (log) {
-        log.innerHTML = alerts.slice(0, 10).map(a => 
+        log.innerHTML = alerts.slice(0, 10).map(a =>
             `<div class="alert-item ${a.ok ? 'ok' : a.type === 'warning' ? 'warning' : ''}">[${a.time}] ${a.msg}</div>`
         ).join('');
     }
@@ -255,8 +360,8 @@ function updateAlerts() {
 // Face Recognition
 function extractFeatures(landmarks) {
     if (!landmarks) return null;
-    const keyPoints = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 
-                        33, 133, 159, 145, 362, 263, 386, 374, 
+    const keyPoints = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323,
+                        33, 133, 159, 145, 362, 263, 386, 374,
                         1, 4, 5, 195, 61, 291, 0, 17, 269];
     const features = [];
     keyPoints.forEach(idx => {
@@ -296,13 +401,13 @@ function captureFace() {
     }
     const name = prompt('Nombre:');
     if (!name) return;
-    
+
     const features = extractFeatures(currentLandmarks);
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = faceCanvas.width;
     tempCanvas.height = faceCanvas.height;
     tempCanvas.getContext('2d').drawImage(faceCanvas, 0, 0);
-    
+
     faceDB.push({
         id: Date.now(),
         name: name,
@@ -366,7 +471,7 @@ function onResults(results) {
             const now = Date.now();
             if (now - lastScanTime > scanCooldown) {
                 lastScanTime = now;
-                
+
                 const features = extractFeatures(currentLandmarks);
                 const match = findMatch(features);
 
@@ -377,39 +482,23 @@ function onResults(results) {
                     faceCtx.font = 'bold 20px Arial';
                     faceCtx.fillText(`✓ ${match.person.name} (${Math.round(match.sim)}%)`, 10, 30);
 
-                    // Autorizar intrusos dentro del perímetro
-                    intruders.forEach(i => {
-                        if (!i.authorized && i.insidePerimeter && !i.identifiedAlertSent) {
-                            i.authorized = true;
-                            i.name = match.person.name;
-                            i.needsScan = false;
-                            i.identifiedAlertSent = true;
-                            addAlert({
-                                time: new Date().toLocaleTimeString(),
-                                msg: `✓ Acceso autorizado: ${match.person.name}`,
-                                ok: true
-                            });
-                        }
-                    });
+                    // Marcar que hay coincidencia facial
+                    if (currentIntruder) {
+                        currentIntruder.faceMatch = true;
+                        currentIntruder.name = match.person.name;
+                        checkAuthorization();
+                    }
                 } else {
                     faceCtx.fillStyle = 'rgba(244, 67, 54, 0.8)';
                     faceCtx.fillRect(0, 0, faceCanvas.width, 50);
                     faceCtx.fillStyle = '#fff';
                     faceCtx.font = 'bold 20px Arial';
                     faceCtx.fillText('⚠ NO AUTORIZADO', 10, 30);
-                    
-                    // Solo enviar alerta de no autorizado una vez por intruso
-                    if (autoScanActive) {
-                        intruders.forEach(i => {
-                            if (!i.authorized && i.insidePerimeter && !i.unauthorizedAlertSent) {
-                                i.unauthorizedAlertSent = true;
-                                addAlert({
-                                    time: new Date().toLocaleTimeString(),
-                                    msg: '🚨 ALERTA: Persona no autorizada detectada',
-                                    ok: false
-                                });
-                            }
-                        });
+
+                    // Marcar que no hay coincidencia facial
+                    if (currentIntruder) {
+                        currentIntruder.faceMatch = false;
+                        checkAuthorization();
                     }
                 }
             }
@@ -422,29 +511,29 @@ function onResults(results) {
 async function toggleCamera() {
     if (!cameraRunning) {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: { ideal: 640 }, 
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 640 },
                     height: { ideal: 480 },
                     facingMode: 'user'
-                } 
+                }
             });
             video.srcObject = stream;
-            
+
             await new Promise((resolve) => {
                 video.onloadedmetadata = resolve;
             });
-            
+
             await video.play();
-            
+
             faceCanvas.width = video.videoWidth;
             faceCanvas.height = video.videoHeight;
-            
+
             placeholder.style.display = 'none';
             faceCanvas.classList.add('active');
-            
+
             cameraRunning = true;
-            
+
             const processFrame = async () => {
                 if (cameraRunning && faceMesh && video.readyState === 4) {
                     await faceMesh.send({ image: video });
@@ -454,7 +543,7 @@ async function toggleCamera() {
                 }
             };
             processFrame();
-            
+
             document.getElementById('cameraBtn').textContent = 'Detener Cámara';
             document.getElementById('captureBtn').disabled = false;
             document.getElementById('scanBtn').disabled = false;
@@ -468,17 +557,17 @@ async function toggleCamera() {
         scanMode = false;
         manualScanMode = false;
         autoScanActive = false;
-        
+
         if (video.srcObject) {
             video.srcObject.getTracks().forEach(t => t.stop());
             video.srcObject = null;
         }
-        
+
         faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
-        
+
         faceCanvas.classList.remove('active');
         placeholder.style.display = 'flex';
-        
+
         document.getElementById('cameraBtn').textContent = 'Iniciar Cámara';
         document.getElementById('captureBtn').disabled = true;
         document.getElementById('scanBtn').disabled = true;
@@ -505,16 +594,17 @@ window.clearAll = clearAll;
 window.toggleCamera = toggleCamera;
 window.captureFace = captureFace;
 window.toggleManualScan = toggleManualScan;
+window.toggleHasApp = toggleHasApp;
 
 window.onload = () => {
     initMap();
     drawMap();
     updateSim();
     initFaceMesh();
-    
+
     faceCanvas.width = 640;
     faceCanvas.height = 480;
-    
+
     faceCanvas.classList.remove('active');
     placeholder.style.display = 'flex';
     updateScanStatus();

@@ -1,96 +1,87 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sistema de Vigilancia Perimetral</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #1a1f3a; color: #fff; }
-        .container { display: grid; grid-template-columns: 2fr 1fr; height: 100vh; }
-        .map-section { position: relative; background: #0f1729; }
-        #mapCanvas { width: 100%; height: 100%; }
-        .controls { position: absolute; top: 10px; left: 10px; }
-        button { padding: 8px 15px; margin: 5px; border: none; background: #2196F3; color: white; cursor: pointer; border-radius: 4px; }
-        button:hover { background: #1976D2; }
-        .sidebar { background: #0a0e27; padding: 15px; overflow-y: auto; }
-        .section { margin-bottom: 20px; padding: 10px; background: #1a1f3a; border-radius: 4px; }
-        h3 { margin-bottom: 10px; color: #4CAF50; font-size: 1em; }
-        #video { display: none; }
-        .video-container { position: relative; width: 100%; background: #000; }
-        #faceCanvas { width: 100%; display: block; border: 2px solid #333; background: #000; }
-        .face-item { background: #2a2f4a; padding: 8px; margin: 5px 0; border-radius: 4px; display: flex; align-items: center; gap: 10px; }
-        .face-thumb { width: 40px; height: 40px; border-radius: 50%; }
-        .face-info { flex: 1; font-size: 0.9em; }
-        .alert-item { background: #3a1f1f; padding: 8px; margin: 5px 0; border-radius: 4px; border-left: 3px solid #f44336; font-size: 0.85em; }
-        .alert-item.ok { background: #1f3a1f; border-left-color: #4CAF50; }
-        .alert-item.warning { background: #3a3a1f; border-left-color: #FF9800; }
-        .stats { display: flex; gap: 15px; margin-bottom: 10px; font-size: 0.9em; }
-        .camera-placeholder { width: 100%; height: 240px; background: #000; display: flex; align-items: center; justify-content: center; color: #666; font-size: 0.9em; }
-        #faceCanvas.active { display: block; }
-        .scan-status { padding: 8px; margin: 10px 0; border-radius: 4px; text-align: center; font-weight: bold; font-size: 0.9em; }
-        .scan-status.inactive { background: #2a2f4a; color: #999; }
-        .scan-status.active { background: #FF9800; color: #fff; animation: pulse 1.5s infinite; }
-        .scan-status.manual { background: #2196F3; color: #fff; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        .zone-indicator { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 4px; font-size: 0.85em; }
-        .zone-indicator.safe { border-left: 3px solid #4CAF50; }
-        .zone-indicator.alert { border-left: 3px solid #f44336; }
-    </style>
-</head>
-<body>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
     <div class="container">
-        <div class="map-section">
-            <canvas id="mapCanvas"></canvas>
-            <div class="controls">
-                <button onclick="addIntruder()">Agregar Intruso</button>
-                <button onclick="clearAll()">Limpiar</button>
-            </div>
+      <div class="map-section">
+        <canvas id="mapCanvas"></canvas>
+        <div class="controls">
+          <button onclick="addIntruder()">Agregar Intruso</button>
+          <button onclick="clearAll()">Limpiar</button>
+        </div>
+        <div id="zoneIndicator" class="zone-indicator safe">
+          Perímetro: <b>SEGURO</b> | Intrusos en zona: <b id="intrudersInZone">0</b>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="stats">
+          <span>Cámaras: <b id="camCount">4</b></span>
+          <span>Sensores: <b id="senCount">8</b></span>
+          <span>Alertas: <b id="alertCount">0</b></span>
         </div>
 
-        <div class="sidebar">
-            <div class="stats">
-                <span>Cámaras: <b id="camCount">4</b></span>
-                <span>Sensores: <b id="senCount">8</b></span>
-                <span>Alertas: <b id="alertCount">0</b></span>
+        <div class="section">
+          <h3>Reconocimiento Facial</h3>
+          <div id="scanStatus" class="scan-status inactive">
+            ⏸ Sistema en Espera
+          </div>
+          <div class="current-intruder">
+            <div><strong>Intruso actual:</strong></div>
+            <div id="currentIntruderInfo">Ninguno</div>
+            <div class="app-toggle">
+              <span>Tiene App:</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="hasAppToggle" onchange="toggleHasApp()">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
-
-            <div class="section">
-                <h3>Reconocimiento Facial</h3>
-                <div id="scanStatus" class="scan-status inactive">
-                    ⏸ Sistema en Espera
-                </div>
-                <video id="video" autoplay muted playsinline></video>
-                <div class="video-container">
-                    <canvas id="faceCanvas"></canvas>
-                    <div id="placeholder" class="camera-placeholder">Cámara desactivada</div>
-                </div>
-                <div style="margin-top: 10px;">
-                    <button id="cameraBtn" onclick="toggleCamera()">Iniciar Cámara</button>
-                    <button id="captureBtn" onclick="captureFace()" disabled>Capturar</button>
-                    <button id="scanBtn" onclick="toggleManualScan()" disabled>Escaneo Manual</button>
-                </div>
+            <div id="authorizationStatus" class="authorization-status pending">
+              Estado: Pendiente de verificación
             </div>
-
-            <div class="section">
-                <h3>Personas Autorizadas (<span id="dbCount">0</span>)</h3>
-                <div id="faceDB"></div>
+          </div>
+          <video id="video" autoplay muted playsinline></video>
+          <div class="video-container">
+            <canvas id="faceCanvas"></canvas>
+            <div id="placeholder" class="camera-placeholder">
+              Cámara desactivada
             </div>
-
-            <div class="section">
-                <h3>Alertas</h3>
-                <div id="alertLog"></div>
-            </div>
+          </div>
+          <div style="margin-top: 10px">
+            <button id="cameraBtn" onclick="toggleCamera()">
+              Iniciar Cámara
+            </button>
+            <button id="captureBtn" onclick="captureFace()" disabled>
+              Capturar
+            </button>
+            <button id="scanBtn" onclick="toggleManualScan()" disabled>
+              Escaneo Manual
+            </button>
+          </div>
         </div>
+
+        <div class="section">
+          <h3>Personas Autorizadas (<span id="dbCount">0</span>)</h3>
+          <div id="faceDB"></div>
+        </div>
+
+        <div class="section">
+          <h3>Alertas</h3>
+          <div id="alertLog"></div>
+        </div>
+      </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
+    <script src="script.js">
+    </script>
+  </body>
 </html>
