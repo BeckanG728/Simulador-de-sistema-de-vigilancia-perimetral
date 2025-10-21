@@ -12,79 +12,79 @@
     </head>
     <body>
         <div class="container">
-        <div class="map-section">
-            <canvas id="mapCanvas"></canvas>
-            <div class="controls">
-            <button onclick="addIntruder()">Agregar Intruso</button>
-            <button onclick="clearAll()">Limpiar</button>
+            <div class="map-section">
+                <canvas id="mapCanvas"></canvas>
+                <div class="controls">
+                <button onclick="addIntruder()">Agregar Intruso</button>
+                <button onclick="clearAll()">Limpiar</button>
+                </div>
+                <div id="zoneIndicator" class="zone-indicator safe">
+                Perímetro: <b>SEGURO</b> | Intrusos en zona:
+                <b id="intrudersInZone">0</b>
+                </div>
             </div>
-            <div id="zoneIndicator" class="zone-indicator safe">
-            Perímetro: <b>SEGURO</b> | Intrusos en zona:
-            <b id="intrudersInZone">0</b>
-            </div>
-        </div>
 
-        <div class="sidebar">
-            <div class="stats">
-            <span>Cámaras: <b id="camCount">4</b></span>
-            <span>Sensores: <b id="senCount">8</b></span>
-            <span>Alertas: <b id="alertCount">0</b></span>
-            <span><a href="movil.html">APP</a></span>
-        </div>
-
-        <div class="section">
-            <h3>Reconocimiento Facial</h3>
-            <div id="scanStatus" class="scan-status inactive">
-                ⏸ Sistema en Espera
-            </div>
-            <div class="current-intruder">
-                <div><strong>Intruso actual:</strong></div>
-                <div id="currentIntruderInfo">Ninguno</div>
-                <div class="app-toggle">
-                <span>Tiene App:</span>
-                <label class="toggle-switch">
-                    <input
-                    type="checkbox"
-                    id="hasAppToggle"
-                    onchange="toggleHasApp()"
-                    />
-                    <span class="toggle-slider"></span>
-                </label>
+            <div class="sidebar">
+                <div class="stats">
+                    <span>Cámaras: <b id="camCount">4</b></span>
+                    <span>Sensores: <b id="senCount">8</b></span>
+                    <span>Alertas: <b id="alertCount">0</b></span>
+                    <span><a href="movil.html">APP</a></span>
                 </div>
-                <div id="authorizationStatus" class="authorization-status pending">
-                Estado: Pendiente de verificación
-                </div>
-            </div>
-            <video id="video" autoplay muted playsinline></video>
-            <div class="video-container">
-                <canvas id="faceCanvas"></canvas>
-                <div id="placeholder" class="camera-placeholder">
-                Cámara desactivada
-                </div>
-            </div>
-            <div style="margin-top: 10px">
-                <button id="cameraBtn" onclick="toggleCamera()">
-                Iniciar Cámara
-                </button>
-                <button id="captureBtn" onclick="captureFace()" disabled>
-                Capturar
-                </button>
-                <button id="scanBtn" onclick="toggleManualScan()" disabled>
-                Escaneo Manual
-                </button>
-            </div>
-            </div>
 
             <div class="section">
-            <h3>Personas Autorizadas (<span id="dbCount">0</span>)</h3>
-            <div id="faceDB"></div>
+                <h3>Reconocimiento Facial</h3>
+                <div id="scanStatus" class="scan-status inactive">
+                    ⏸ Sistema en Espera
+                </div>
+                <div class="current-intruder">
+                    <div><strong>Intruso actual:</strong></div>
+                    <div id="currentIntruderInfo">Ninguno</div>
+                    <div class="app-toggle">
+                        <span>Tiene App:</span>
+                        <label class="toggle-switch">
+                            <input
+                            type="checkbox"
+                            id="hasAppToggle"
+                            onchange="toggleHasApp()"
+                            />
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div id="authorizationStatus" class="authorization-status pending">
+                        Estado: Pendiente de verificación
+                    </div>
+                </div>
+                <video id="video" autoplay muted playsinline></video>
+                <div class="video-container">
+                    <canvas id="faceCanvas"></canvas>
+                    <div id="placeholder" class="camera-placeholder">
+                        Cámara desactivada
+                    </div>
+                </div>
+                <div style="margin-top: 10px">
+                    <button id="cameraBtn" onclick="toggleCamera()">
+                        Iniciar Cámara
+                    </button>
+                    <button id="captureBtn" onclick="captureFace()" disabled>
+                        Capturar
+                    </button>
+                    <button id="scanBtn" onclick="toggleManualScan()" disabled>
+                        Escaneo Manual
+                    </button>
+                </div>
             </div>
 
-            <div class="section">
-            <h3>Alertas</h3>
-            <div id="alertLog"></div>
+                <div class="section">
+                    <h3>Personas Autorizadas (<span id="dbCount">0</span>)</h3>
+                    <div id="faceDB"></div>
+                </div>
+
+                <div class="section">
+                    <h3>Alertas</h3>
+                    <div id="alertLog"></div>
+                </div>
             </div>
-        </div>
         </div>
 
         <script src="script.js"></script>
