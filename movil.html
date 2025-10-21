@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureHome - Sistema de Seguridad</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background: #000;
+            border-radius: 40px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 30px;
+            background: #000;
+            border-radius: 0 0 20px 20px;
+            z-index: 1000;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            background: #f5f5f7;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            height: 44px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            color: white;
+            font-size: 12px;
+            padding-top: 10px;
+        }
+
+        .app-content {
+            height: calc(100% - 124px);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .nav-item.active {
+            background: #f0f0f5;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .nav-item.active .nav-label {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* Módulo Dashboard */
+        .header {
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 25px;
+            color: white;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .status-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .status-icon {
+            font-size: 48px;
+        }
+
+        .status-text h2 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .status-text p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .status-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .status-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-card h3 {
+            font-size: 28px;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .recent-events {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .recent-events h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .event-icon.safe {
+            background: #e8f5e9;
+        }
+
+        .event-icon.alert {
+            background: #fff3e0;
+        }
+
+        .event-details h4 {
+            font-size: 14px;
+            color: #1a1a1a;
+            margin-bottom: 3px;
+        }
+
+        .event-details p {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* Módulo Cámaras */
+        .camera-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .camera-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .camera-preview {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            position: relative;
+        }
+
+        .camera-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4caf50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .camera-info {
+            padding: 15px;
+        }
+
+        .camera-info h4 {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #1a1a1a;
+        }
+
+        .camera-info p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #f0f0f5;
+            color: #666;
+        }
+
+        /* Módulo Sensores */
+        .sensor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sensor-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sensor-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .sensor-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sensor-details h4 {
+            font-size: 16px;
+            color: #1a1a1a;
+            margin-bottom: 3px;
+        }
+
+        .sensor-details p {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .sensor-status {
+            text-align: right;
+        }
+
+        .sensor-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 3px;
+        }
+
+        .sensor-label {
+            font-size: 11px;
+            color: #999;
+        }
+
+        /* Módulo Configuración */
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-section h3 {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-item:hover {
+            background: #f9f9f9;
+        }
+
+        .setting-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .setting-icon {
+            font-size: 20px;
+            color: #667eea;
+        }
+
+        .setting-text h4 {
+            font-size: 15px;
+            color: #1a1a1a;
+            margin-bottom: 3px;
+        }
+
+        .setting-text p {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 28px;
+            background: #ddd;
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #4caf50;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-content > div {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-container">
+        <div class="notch"></div>
+        <div class="screen">
+            <div class="status-bar">
+                <div>9:41</div>
+                <div>🔋 100%</div>
+            </div>
+
+            <div class="app-content">
+                <!-- Módulo Dashboard -->
+                <div id="dashboard" class="module">
+                    <div class="header">
+                        <h1>SecureHome</h1>
+                        <p>Sistema de Seguridad Inteligente</p>
+                    </div>
+
+                    <div class="status-card">
+                        <div class="status-main">
+                            <div>
+                                <div class="status-icon">🛡️</div>
+                            </div>
+                            <div class="status-text">
+                                <h2>Sistema Activo</h2>
+                                <p>Todos los sensores operativos</p>
+                            </div>
+                        </div>
+                        <button class="status-toggle" onclick="toggleSystem()">Desactivar Sistema</button>
+                    </div>
+
+                    <div class="quick-stats">
+                        <div class="stat-card">
+                            <h3>0</h3>
+                            <p>Alertas hoy</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>12</h3>
+                            <p>Detecciones validadas</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>5</h3>
+                            <p>Sensores activos</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>98%</h3>
+                            <p>Precisión IA</p>
+                        </div>
+                    </div>
+
+                    <div class="recent-events">
+                        <h3>Eventos Recientes</h3>
+                        <div class="event-item">
+                            <div class="event-icon safe">✓</div>
+                            <div class="event-details">
+                                <h4>Acceso autorizado</h4>
+                                <p>Hace 2 horas - Puerta principal</p>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon safe">✓</div>
+                            <div class="event-details">
+                                <h4>Movimiento detectado</h4>
+                                <p>Hace 4 horas - Jardín frontal</p>
+                            </div>
+                        </div>
+                        <div class="event-item">
+                            <div class="event-icon alert">⚠️</div>
+                            <div class="event-details">
+                                <h4>Patrón inusual detectado</h4>
+                                <p>Ayer 23:15 - Perímetro trasero</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Módulo Cámaras -->
+                <div id="cameras" class="module hidden">
+                    <div class="header">
+                        <h1>Cámaras</h1>
+                        <p>Monitoreo en tiempo real</p>
+                    </div>
+
+                    <div class="camera-grid">
+                        <div class="camera-card">
+                            <div class="camera-preview">
+                                📹
+                                <div class="camera-status">En vivo</div>
+                            </div>
+                            <div class="camera-info">
+                                <h4>Cámara Frontal</h4>
+                                <p>Entrada principal - Última detección: Hace 2h</p>
+                                <div class="camera-actions">
+                                    <button class="btn-small btn-primary">Ver en vivo</button>
+                                    <button class="btn-small btn-secondary">Historial</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="camera-card">
+                            <div class="camera-preview">
+                                📹
+                                <div class="camera-status">En vivo</div>
+                            </div>
+                            <div class="camera-info">
+                                <h4>Cámara Trasera</h4>
+                                <p>Jardín posterior - Sin actividad reciente</p>
+                                <div class="camera-actions">
+                                    <button class="btn-small btn-primary">Ver en vivo</button>
+                                    <button class="btn-small btn-secondary">Historial</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="camera-card">
+                            <div class="camera-preview">
+                                📹
+                                <div class="camera-status">En vivo</div>
+                            </div>
+                            <div class="camera-info">
+                                <h4>Cámara Lateral</h4>
+                                <p>Pasillo lateral - Última detección: Hace 4h</p>
+                                <div class="camera-actions">
+                                    <button class="btn-small btn-primary">Ver en vivo</button>
+                                    <button class="btn-small btn-secondary">Historial</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Módulo Sensores -->
+                <div id="sensors" class="module hidden">
+                    <div class="header">
+                        <h1>Sensores IoT</h1>
+                        <p>Estado de dispositivos</p>
+                    </div>
+
+                    <div class="sensor-list">
+                        <div class="sensor-card">
+                            <div class="sensor-info">
+                                <div class="sensor-icon">🚶</div>
+                                <div class="sensor-details">
+                                    <h4>Sensor PIR Principal</h4>
+                                    <p>Entrada - Activo</p>
+                                </div>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-value">Normal</div>
+                                <div class="sensor-label">Estado</div>
+                            </div>
+                        </div>
+
+                        <div class="sensor-card">
+                            <div class="sensor-info">
+                                <div class="sensor-icon">📏</div>
+                                <div class="sensor-details">
+                                    <h4>Sensor Ultrasónico</h4>
+                                    <p>Perímetro frontal - Activo</p>
+                                </div>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-value">2.5m</div>
+                                <div class="sensor-label">Distancia</div>
+                            </div>
+                        </div>
+
+                        <div class="sensor-card">
+                            <div class="sensor-info">
+                                <div class="sensor-icon">🚪</div>
+                                <div class="sensor-details">
+                                    <h4>Sensor Magnético</h4>
+                                    <p>Puerta principal - Activo</p>
+                                </div>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-value">Cerrado</div>
+                                <div class="sensor-label">Estado</div>
+                            </div>
+                        </div>
+
+                        <div class="sensor-card">
+                            <div class="sensor-info">
+                                <div class="sensor-icon">🌡️</div>
+                                <div class="sensor-details">
+                                    <h4>Sensor Ambiental</h4>
+                                    <p>Interior - Activo</p>
+                                </div>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-value">22°C</div>
+                                <div class="sensor-label">Temperatura</div>
+                            </div>
+                        </div>
+
+                        <div class="sensor-card">
+                            <div class="sensor-info">
+                                <div class="sensor-icon">🔊</div>
+                                <div class="sensor-details">
+                                    <h4>Sensor Acústico</h4>
+                                    <p>Perímetro - Activo</p>
+                                </div>
+                            </div>
+                            <div class="sensor-status">
+                                <div class="sensor-value">35dB</div>
+                                <div class="sensor-label">Nivel</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Módulo Configuración -->
+                <div id="settings" class="module hidden">
+                    <div class="header">
+                        <h1>Configuración</h1>
+                        <p>Ajustes del sistema</p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Seguridad</h3>
+                        <div class="settings-card">
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">🔐</div>
+                                    <div class="setting-text">
+                                        <h4>Autenticación Invisible</h4>
+                                        <p>Reconocimiento automático</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">👤</div>
+                                    <div class="setting-text">
+                                        <h4>Reconocimiento Facial</h4>
+                                        <p>Validación por rostro</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Notificaciones</h3>
+                        <div class="settings-card">
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">🔔</div>
+                                    <div class="setting-text">
+                                        <h4>Alertas Push</h4>
+                                        <p>Notificaciones inmediatas</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">📧</div>
+                                    <div class="setting-text">
+                                        <h4>Alertas por Email</h4>
+                                        <p>Resumen diario</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Sistema</h3>
+                        <div class="settings-card">
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">🤖</div>
+                                    <div class="setting-text">
+                                        <h4>IA Local</h4>
+                                        <p>Aprendizaje adaptativo</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">☁️</div>
+                                    <div class="setting-text">
+                                        <h4>Sincronización Nube</h4>
+                                        <p>Solo metadatos cifrados</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-left">
+                                    <div class="setting-icon">🔒</div>
+                                    <div class="setting-text">
+                                        <h4>Privacidad</h4>
+                                        <p>Configurar permisos</p>
+                                    </div>
+                                </div>
+                                <span style="color: #999;">›</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item active" onclick="switchModule('dashboard')">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-label">Inicio</div>
+                </div>
+                <div class="nav-item" onclick="switchModule('cameras')">
+                    <div class="nav-icon">📹</div>
+                    <div class="nav-label">Cámaras</div>
+                </div>
+                <div class="nav-item" onclick="switchModule('sensors')">
+                    <div class="nav-icon">📡</div>
+                    <div class="nav-label">Sensores</div>
+                </div>
+                <div class="nav-item" onclick="switchModule('settings')">
+                    <div class="nav-icon">⚙️</div>
+                    <div class="nav-label">Ajustes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchModule(moduleName) {
+            // Ocultar todos los módulos
+            document.querySelectorAll('.module').forEach(module => {
+                module.classList.add('hidden');
+            });
+            
+            // Mostrar el módulo seleccionado
+            document.getElementById(moduleName).classList.remove('hidden');
+            
+            // Actualizar navegación
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+        }
+
+        function toggleSystem() {
+            const statusCard = document.querySelector('.status-card');
+            const button = document.querySelector('.status-toggle');
+            const statusText = document.querySelector('.status-text h2');
+            
+            if (button.textContent === 'Desactivar Sistema') {
+                button.textContent = 'Activar Sistema';
+                statusText.textContent = 'Sistema Inactivo';
+                statusCard.style.background = 'linear-gradient(135deg, #666 0%, #999 100%)';
+            } else {
+                button.textContent = 'Desactivar Sistema';
+                statusText.textContent = 'Sistema Activo';
+                statusCard.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            }
+        }
+    </script>
+</body>
+</html>
